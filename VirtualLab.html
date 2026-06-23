@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtual Landslide Lab - Simulasi Mitigasi Bencana</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome untuk ikon pendukung -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            overflow-x: hidden;
+        }
+        .code-font {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        /* Custom scrollbar untuk nuansa lab */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+        /* Animasi hujan */
+        @keyframes rain {
+            0% { transform: translateY(-20px) translateX(0px); opacity: 0; }
+            50% { opacity: 0.6; }
+            100% { transform: translateY(180px) translateX(-40px); opacity: 0; }
+        }
+        .rain-drop {
+            position: absolute;
+            background: linear-gradient(transparent, #38bdf8);
+            width: 2px;
+            height: 15px;
+            opacity: 0;
+            pointer-events: none;
+        }
+        /* Shake effect untuk retakan/longsor */
+        @keyframes shake {
+            0%, 100% { transform: translate(0, 0); }
+            10%, 30%, 50%, 70%, 90% { transform: translate(-2px, 1px); }
+            20%, 40%, 60%, 80% { transform: translate(2px, -1px); }
+        }
+        .shake-element {
+            animation: shake 0.5s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between">
+
+    <!-- Header Lab -->
+    <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-50 px-4 py-3">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-emerald-500 flex items-center justify-center text-slate-900 shadow-lg shadow-emerald-500/20">
+                    <i class="fa-solid fa-mountain-sun text-xl animate-pulse"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-extrabold tracking-tight text-white flex items-center gap-2">
+                        VIRTUAL LANDSLIDE LAB
+                        <span class="text-xs bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/20 font-normal">v2.5-EDU</span>
+                    </h1>
+                    <p class="text-xs text-slate-400">Media Pembelajaran Interaktif Mitigasi Bencana Tanah Longsor</p>
+                </div>
+            </div>
+            <!-- Fitur Level Selector -->
+            <div class="flex items-center gap-1.5 bg-slate-950 p-1.5 rounded-xl border border-slate-800 overflow-x-auto max-w-full">
+                <button onclick="changeLevel(1)" id="btn-lvl-1" class="lvl-btn px-3 py-1.5 text-xs font-semibold rounded-lg transition-all whitespace-nowrap bg-emerald-600 text-white shadow-md">Lvl 1: Hutan</button>
+                <button onclick="changeLevel(2)" id="btn-lvl-2" class="lvl-btn px-3 py-1.5 text-xs font-semibold rounded-lg transition-all text-slate-400 hover:text-white whitespace-nowrap">Lvl 2: Tani</button>
+                <button onclick="changeLevel(3)" id="btn-lvl-3" class="lvl-btn px-3 py-1.5 text-xs font-semibold rounded-lg transition-all text-slate-400 hover:text-white whitespace-nowrap">Lvl 3: Gunung</button>
+                <button onclick="changeLevel(4)" id="btn-lvl-4" class="lvl-btn px-3 py-1.5 text-xs font-semibold rounded-lg transition-all text-slate-400 hover:text-white whitespace-nowrap">Lvl 4: Ekstrem</button>
+                <button onclick="changeLevel(5)" id="btn-lvl-5" class="lvl-btn px-3 py-1.5 text-xs font-semibold rounded-lg transition-all text-slate-400 hover:text-white whitespace-nowrap">Lvl 5: Desa</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="flex-grow max-w-7xl w-full mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        <!-- Kolom Kiri: Simulator Grafis & Keterangan (7 Kolom) -->
+        <section class="lg:col-span-7 flex flex-col gap-4 w-full">
+            
+            <!-- Dashboard Info Level & Cerita -->
+            <div class="bg-gradient-to-r from-slate-900 to-slate-850 p-4 rounded-2xl border border-slate-800 shadow-xl">
+                <div class="flex justify-between items-start gap-4">
+                    <div>
+                        <span class="text-xs font-bold text-emerald-400 uppercase tracking-widest block mb-1" id="level-badge">LEVEL 1 - LERENG HUTAN</span>
+                        <h2 class="text-xl font-bold text-white mb-1" id="level-title">Pengaruh Vegetasi Alami</h2>
+                        <p class="text-xs text-slate-300 leading-relaxed" id="level-desc">
+                            Sebagai Peneliti Kebencanaan, pelajari bagaimana keberadaan pohon alami dan struktur akar menahan beban tanah saat curah hujan meningkat. Cobalah menguji tingkat ketahanan lereng ini!
+                        </p>
+                    </div>
+                    <div class="bg-slate-800/80 p-2.5 rounded-xl border border-slate-700/50 text-center min-w-[70px]">
+                        <div class="text-[10px] text-slate-400 uppercase font-semibold">Skor Lab</div>
+                        <div class="text-xl font-black text-amber-400" id="lab-score">100</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Interaktif Viewport (SVG Render) -->
+            <div class="relative bg-slate-950 rounded-3xl border-2 border-slate-800 overflow-hidden shadow-2xl flex flex-col">
+                <!-- Watermark PhET Style -->
+                <div class="absolute top-3 left-4 z-10 pointer-events-none flex items-center gap-2">
+                    <span class="bg-blue-600/20 text-blue-400 text-[10px] font-bold px-2 py-1 rounded border border-blue-500/30">VISUALISASI AKTIF</span>
+                    <span id="scale-indicator" class="text-[10px] text-slate-500 font-mono">Skala: 1 : 100 meter</span>
+                </div>
+
+                <!-- Info IPA Pop-up Overlay (Edukasi Tap) -->
+                <div id="info-ipa-box" class="absolute top-14 left-4 right-4 z-30 bg-slate-900/95 border border-amber-500/40 p-3 rounded-xl shadow-xl transition-all duration-300 transform translate-y-[-120%] opacity-0 pointer-events-none">
+                    <div class="flex justify-between items-start">
+                        <div class="flex gap-2.5 items-start">
+                            <span class="text-2xl" id="info-ipa-icon">🌳</span>
+                            <div>
+                                <h4 class="text-xs font-bold text-amber-400 uppercase tracking-wider">Info IPA Kebencanaan</h4>
+                                <p class="text-xs text-white mt-1 leading-relaxed" id="info-ipa-text">Detail penjelasan edukasi tentang elemen lereng.</p>
+                            </div>
+                        </div>
+                        <button onclick="closeInfoIpa()" class="text-slate-400 hover:text-white text-xs bg-slate-800 p-1 rounded-md">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Petunjuk Interaksi Hover -->
+                <div class="absolute bottom-3 right-4 z-10 pointer-events-none text-[10px] text-slate-400 bg-slate-900/70 backdrop-blur px-2 py-1 rounded border border-slate-800 flex items-center gap-1">
+                    <i class="fa-solid fa-hand-pointer text-emerald-400 animate-bounce"></i> Klik objek berkedip untuk info ilmiah
+                </div>
+
+                <!-- Kotak Simulasi Canvas-SVG -->
+                <div class="relative w-full aspect-[4/3] bg-gradient-to-b from-sky-950 via-slate-900 to-slate-950 overflow-hidden" id="simulation-container">
+                    
+                    <!-- Animasi Hujan Container -->
+                    <div id="rain-layer" class="absolute inset-0 z-10 pointer-events-none"></div>
+
+                    <!-- SVG Elemen Utama -->
+                    <svg id="svg-canvas" viewBox="0 0 800 600" class="w-full h-full transition-all duration-500">
+                        <!-- Langit Background Gradasi -->
+                        <defs>
+                            <linearGradient id="sky-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" stop-color="#082f49" />
+                                <stop offset="100%" stop-color="#0f172a" />
+                            </linearGradient>
+                            <linearGradient id="soil-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" stop-color="#7c2d12" />
+                                <stop offset="100%" stop-color="#451a03" />
+                            </linearGradient>
+                            <!-- Filter Bayangan -->
+                            <filter id="shadow" x="-5%" y="-5%" width="110%" height="110%">
+                                <feDropShadow dx="2" dy="4" stdDeviation="4" flood-color="#000" flood-opacity="0.4"/>
+                            </filter>
+                        </defs>
+
+                        <!-- Struktur Tanah Dasar -->
+                        <path id="bedrock" d="M 0 500 L 800 500 L 800 600 L 0 600 Z" fill="#334155" />
+                        
+                        <!-- Lapisan Tanah Bergerak / Lereng (Dapat Diubah melalui Kemiringan) -->
+                        <path id="soil-layer" d="M 0 450 L 500 200 L 800 200 L 800 500 L 0 500 Z" fill="url(#soil-grad)" filter="url(#shadow)" class="transition-all duration-500" />
+                        
+                        <!-- Penanda Klik Lereng Berkedip (IPA Info) -->
+                        <path id="slope-clickable" d="M 0 450 L 500 200 L 800 200" stroke="#f59e0b" stroke-width="6" stroke-dasharray="6,6" fill="none" class="cursor-pointer hover:stroke-white transition-colors animate-pulse" onclick="showInfoIpa('lereng')" />
+
+                        <!-- Terasering Garis Visual (Muncul jika mitigasi aktif) -->
+                        <g id="terasering-graphics" class="opacity-0 transition-all duration-500">
+                            <!-- Jalur terasering dibentuk dinamis oleh JS -->
+                        </g>
+
+                        <!-- Saluran Drainase (Muncul jika mitigasi aktif) -->
+                        <path id="drainase-graphics" d="" stroke="#38bdf8" stroke-width="8" fill="none" class="opacity-0 transition-all duration-500" />
+
+                        <!-- Sistem Akar di dalam tanah -->
+                        <g id="roots-layer" class="transition-opacity duration-500"></g>
+
+                        <!-- Retakan Tanah (Muncul saat risiko tinggi) -->
+                        <path id="crack-line-1" d="M 400 250 L 410 280 L 405 310" stroke="#ef4444" stroke-width="4" fill="none" class="opacity-0 transition-opacity duration-300" />
+                        <path id="crack-line-2" d="M 250 325 L 260 350 L 255 375" stroke="#ef4444" stroke-width="4" fill="none" class="opacity-0 transition-opacity duration-300" />
+
+                        <!-- Vegetasi / Pohon & Tanaman -->
+                        <g id="vegetation-layer" class="cursor-pointer" onclick="showInfoIpa('pohon')">
+                            <!-- Digenerasi secara dinamis oleh JS berdasarkan slider vegetasi -->
+                        </g>
+
+                        <!-- Pemukiman Penduduk / Rumah -->
+                        <g id="settlement-layer" class="transition-all duration-500">
+                            <!-- Rumah 1 di area bawah lereng -->
+                            <g id="house-1" class="transition-all duration-500">
+                                <rect x="50" y="400" width="60" height="50" fill="#cbd5e1" stroke="#475569" stroke-width="2" rx="4" />
+                                <polygon points="40,400 120,400 80,360" fill="#ef4444" stroke="#b91c1c" stroke-width="2" />
+                                <rect x="70" y="420" width="20" height="30" fill="#1e293b" />
+                                <rect x="100" y="410" width="10" height="15" fill="#f59e0b" />
+                            </g>
+                            <!-- Rumah 2 di lereng bagian datar -->
+                            <g id="house-2" class="transition-all duration-500">
+                                <rect x="650" y="150" width="70" height="50" fill="#f1f5f9" stroke="#475569" stroke-width="2" rx="4" />
+                                <polygon points="640,150 730,150 685,110" fill="#ea580c" stroke="#c2410c" stroke-width="2" />
+                                <rect x="670" y="170" width="18" height="30" fill="#1e293b" />
+                                <rect x="700" y="160" width="12" height="15" fill="#e2e8f0" />
+                            </g>
+                        </g>
+
+                        <!-- Peringatan Dini (EWS Tower) -->
+                        <g id="ews-graphics" class="opacity-0 transition-all duration-500 cursor-pointer" onclick="showInfoIpa('ews')">
+                            <line x1="740" y1="150" x2="740" y2="80" stroke="#94a3b8" stroke-width="4" />
+                            <circle cx="740" cy="80" r="10" fill="#ef4444" id="ews-light" class="animate-ping" />
+                            <circle cx="740" cy="80" r="6" fill="#ef4444" />
+                            <path d="M 730 100 L 750 100 M 733 115 L 747 115" stroke="#94a3b8" stroke-width="2" />
+                        </g>
+
+                        <!-- Batuan Lepas di lereng -->
+                        <g id="rock-layer">
+                            <circle id="rock-1" cx="300" cy="300" r="12" fill="#64748b" stroke="#475569" stroke-width="2" />
+                            <circle id="rock-2" cx="350" cy="270" r="8" fill="#475569" stroke="#334155" stroke-width="2" />
+                            <circle id="rock-3" cx="180" cy="360" r="14" fill="#64748b" stroke="#475569" stroke-width="2" />
+                        </g>
+
+                        <!-- Sensor Titik Pengamatan / Laser Tracker PhET Style -->
+                        <g id="sensor-layer" class="opacity-80">
+                            <!-- Klik sensor hujan -->
+                            <circle cx="450" cy="80" r="15" fill="#1e293b" stroke="#38bdf8" stroke-width="2" class="cursor-pointer animate-pulse" onclick="showInfoIpa('hujan')" />
+                            <text x="450" y="84" font-size="12" font-family="sans-serif" fill="#38bdf8" text-anchor="middle" font-weight="bold" class="pointer-events-none">🌧</text>
+                        </g>
+                    </svg>
+
+                    <!-- Overlay Tanda Longsor Terjadi (Full Screen Screen Red Flash) -->
+                    <div id="slide-flash" class="absolute inset-0 bg-red-600/20 mix-blend-overlay opacity-0 pointer-events-none transition-opacity duration-200"></div>
+                </div>
+
+                <!-- Panel Status Interaktif Bawah Layar -->
+                <div class="bg-slate-900 border-t border-slate-800 p-4 grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+                    <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+                        <div class="text-[10px] text-slate-400 uppercase font-semibold">Kondisi Lereng</div>
+                        <div class="text-sm font-bold text-emerald-400 mt-1 flex items-center justify-center gap-1.5" id="slope-status-text">
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span> Stabil
+                        </div>
+                    </div>
+                    <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+                        <div class="text-[10px] text-slate-400 uppercase font-semibold">Kejenuhan Air Tanah</div>
+                        <div class="text-sm font-bold text-sky-400 mt-1" id="saturation-text">12.5%</div>
+                    </div>
+                    <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+                        <div class="text-[10px] text-slate-400 uppercase font-semibold">Cengkeraman Akar</div>
+                        <div class="text-sm font-bold text-amber-500 mt-1" id="grip-text">Kuat</div>
+                    </div>
+                    <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+                        <div class="text-[10px] text-slate-400 uppercase font-semibold">Tipe Penggunaan Lahan</div>
+                        <div class="text-sm font-bold text-white mt-1" id="landuse-status-text">Hutan Alami</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Petunjuk Mitigasi & Feedback Edukasi -->
+            <div class="bg-slate-900 rounded-2xl border border-slate-800 p-4 shadow-lg">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2.5 flex items-center gap-2">
+                    <i class="fa-solid fa-bell-concierge text-emerald-400"></i> Feedback Peneliti Terhadap Lereng
+                </h3>
+                <div class="flex gap-3 items-start bg-slate-950 p-3.5 rounded-xl border border-slate-800" id="feedback-container">
+                    <span class="text-2xl mt-0.5" id="feedback-emoji">🟢</span>
+                    <div>
+                        <h4 class="text-sm font-bold text-emerald-400" id="feedback-title">Lereng Aman &amp; Terjaga</h4>
+                        <p class="text-xs text-slate-300 mt-1 leading-relaxed" id="feedback-desc">
+                            Bagus! Lereng stabil karena vegetasi cukup dan curah hujan rendah. Pertahankan ekosistem ini agar struktur tanah terus kokoh.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Kolom Kanan: Panel Kontrol Eksperimen (5 Kolom) -->
+        <section class="lg:col-span-5 flex flex-col gap-5 w-full">
+            
+            <!-- Pengukur Risiko / Spidometer Dial Modern -->
+            <div class="bg-gradient-to-br from-slate-900 to-slate-950 rounded-3xl border border-slate-800 p-5 shadow-xl">
+                <div class="text-center">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">INDEKS RISIKO LONGSOR</h3>
+                    
+                    <div class="relative w-44 h-24 mx-auto overflow-hidden flex items-end justify-center mb-1">
+                        <!-- Background arc -->
+                        <div class="absolute inset-0 w-44 h-44 border-[14px] border-slate-800 rounded-full"></div>
+                        <!-- Dinamis colored arc (risiko fill) -->
+                        <div id="risk-arc" class="absolute inset-0 w-44 h-44 border-[14px] border-emerald-500 rounded-full transform rotate-[45deg] transition-all duration-500 origin-center" style="clip-path: polygon(0 50%, 100% 50%, 100% 100%, 0 100%);"></div>
+                        <!-- Jarum penunjuk -->
+                        <div id="gauge-needle" class="absolute bottom-0 w-1.5 h-16 bg-white origin-bottom rounded-t-full transition-transform duration-500 transform rotate-[-90deg]"></div>
+                        
+                        <!-- Tengah Teks Indeks -->
+                        <div class="absolute bottom-0 text-center">
+                            <span class="text-3xl font-black text-white block tracking-tighter" id="risk-index-value">12</span>
+                            <span class="text-[9px] uppercase tracking-widest font-bold text-emerald-400" id="risk-status-badge">RENDAH</span>
+                        </div>
+                    </div>
+
+                    <!-- Indikator Batas Risiko -->
+                    <div class="flex justify-between text-[10px] text-slate-500 font-mono px-3 mt-1">
+                        <span>Min (0)</span>
+                        <span>Longsor terjadi pada Indeks &gt; 70</span>
+                        <span>Maks (100)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Kontrol Utama (Slider) -->
+            <div class="bg-slate-900 rounded-3xl border border-slate-800 p-5 shadow-xl flex flex-col gap-5">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-2.5">
+                    <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-emerald-500"></i> Variabel Eksperimen
+                    </h3>
+                    <button onclick="resetSimulasi()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded-lg border border-slate-700 transition-colors flex items-center gap-1">
+                        <i class="fa-solid fa-rotate-left"></i> Reset Lab
+                    </button>
+                </div>
+
+                <!-- Slider 1: Curah Hujan -->
+                <div class="flex flex-col gap-1.5">
+                    <div class="flex justify-between text-xs">
+                        <span class="font-bold text-slate-300 flex items-center gap-1.5">
+                            <i class="fa-solid fa-cloud-showers-water text-sky-400"></i> Curah Hujan
+                        </span>
+                        <span id="rain-slider-val" class="text-sky-400 font-bold code-font">20%</span>
+                    </div>
+                    <input type="range" id="slider-rain" min="0" max="100" value="20" class="w-full h-2 bg-slate-950 rounded-lg appearance-none cursor-pointer accent-sky-500" oninput="updateSimulation()">
+                    <div class="flex justify-between text-[10px] text-slate-500">
+                        <span>0% (Cerah)</span>
+                        <span>50% (Sedang)</span>
+                        <span>100% (Ekstrem)</span>
+                    </div>
+                </div>
+
+                <!-- Slider 2: Vegetasi -->
+                <div class="flex flex-col gap-1.5">
+                    <div class="flex justify-between text-xs">
+                        <span class="font-bold text-slate-300 flex items-center gap-1.5">
+                            <i class="fa-solid fa-tree text-emerald-400"></i> Kepadatan Vegetasi
+                        </span>
+                        <span id="veg-slider-val" class="text-emerald-400 font-bold code-font">80%</span>
+                    </div>
+                    <input type="range" id="slider-veg" min="0" max="100" value="80" class="w-full h-2 bg-slate-950 rounded-lg appearance-none cursor-pointer accent-emerald-500" oninput="updateSimulation()">
+                    <div class="flex justify-between text-[10px] text-slate-500">
+                        <span>Gundul (0%)</span>
+                        <span>Sedang (50%)</span>
+                        <span>Hutan Rapat (100%)</span>
+                    </div>
+                </div>
+
+                <!-- Slider 3: Kemiringan Lereng -->
+                <div class="flex flex-col gap-1.5">
+                    <div class="flex justify-between text-xs">
+                        <span class="font-bold text-slate-300 flex items-center gap-1.5">
+                            <i class="fa-solid fa-mountain text-amber-500"></i> Kemiringan Lereng
+                        </span>
+                        <span id="slope-slider-val" class="text-amber-500 font-bold code-font">20°</span>
+                    </div>
+                    <input type="range" id="slider-slope" min="5" max="45" value="20" class="w-full h-2 bg-slate-950 rounded-lg appearance-none cursor-pointer accent-amber-500" oninput="updateSimulation()">
+                    <div class="flex justify-between text-[10px] text-slate-500">
+                        <span>Landai (5°)</span>
+                        <span>Sedang (25°)</span>
+                        <span>Curam (45°)</span>
+                    </div>
+                </div>
+
+                <!-- Penggunaan Lahan Selection -->
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-xs font-bold text-slate-300 flex items-center gap-1.5 mb-1">
+                        <i class="fa-solid fa-map text-violet-400"></i> Tipe Penggunaan Lahan
+                    </label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="setLanduse('hutan')" id="btn-lu-hutan" class="lu-btn py-2 px-3 text-xs rounded-xl font-semibold border text-left transition-all bg-emerald-950/40 text-emerald-400 border-emerald-500/50">🌲 Hutan Alami</button>
+                        <button onclick="setLanduse('tani')" id="btn-lu-tani" class="lu-btn py-2 px-3 text-xs rounded-xl font-semibold border text-left transition-all bg-slate-950 text-slate-400 border-slate-800">🌾 Pertanian</button>
+                        <button onclick="setLanduse('desa')" id="btn-lu-desa" class="lu-btn py-2 px-3 text-xs rounded-xl font-semibold border text-left transition-all bg-slate-950 text-slate-400 border-slate-800">🏡 Permukiman</button>
+                        <button onclick="setLanduse('gundul')" id="btn-lu-gundul" class="lu-btn py-2 px-3 text-xs rounded-xl font-semibold border text-left transition-all bg-slate-950 text-slate-400 border-slate-800">🪵 Lahan Gundul</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel Fitur Mitigasi Bencana -->
+            <div class="bg-slate-900 rounded-3xl border border-slate-800 p-5 shadow-xl flex flex-col gap-4">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-2.5">
+                    <i class="fa-solid fa-shield-halved text-blue-500"></i> Fitur Rekayasa Mitigasi (Intervensi)
+                </h3>
+                <p class="text-[11px] text-slate-400">Aktifkan struktur rekayasa fisik untuk meminimalkan indeks risiko longsor:</p>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <!-- Reboisasi -->
+                    <label class="relative flex items-center gap-3 p-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer transition-all">
+                        <input type="checkbox" id="mit-reboisasi" onchange="updateSimulation()" class="w-4 h-4 rounded text-blue-600 bg-slate-900 border-slate-700 focus:ring-blue-500 focus:ring-offset-slate-900">
+                        <div>
+                            <span class="text-xs font-bold text-white block">Reboisasi</span>
+                            <span class="text-[9px] text-emerald-400 font-medium">Stabilitas +25%</span>
+                        </div>
+                    </label>
+
+                    <!-- Terasering -->
+                    <label class="relative flex items-center gap-3 p-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer transition-all">
+                        <input type="checkbox" id="mit-terasering" onchange="updateSimulation()" class="w-4 h-4 rounded text-blue-600 bg-slate-900 border-slate-700 focus:ring-blue-500 focus:ring-offset-slate-900">
+                        <div>
+                            <span class="text-xs font-bold text-white block">Terasering</span>
+                            <span class="text-[9px] text-emerald-400 font-medium">Slope Efektif -15°</span>
+                        </div>
+                    </label>
+
+                    <!-- Sistem Drainase -->
+                    <label class="relative flex items-center gap-3 p-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer transition-all">
+                        <input type="checkbox" id="mit-drainase" onchange="updateSimulation()" class="w-4 h-4 rounded text-blue-600 bg-slate-900 border-slate-700 focus:ring-blue-500 focus:ring-offset-slate-900">
+                        <div>
+                            <span class="text-xs font-bold text-white block">Sistem Drainase</span>
+                            <span class="text-[9px] text-sky-400 font-medium">Jenuh Air -30%</span>
+                        </div>
+                    </label>
+
+                    <!-- Early Warning System (EWS) -->
+                    <label class="relative flex items-center gap-3 p-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer transition-all">
+                        <input type="checkbox" id="mit-ews" onchange="updateSimulation()" class="w-4 h-4 rounded text-blue-600 bg-slate-900 border-slate-700 focus:ring-blue-500 focus:ring-offset-slate-900">
+                        <div>
+                            <span class="text-xs font-bold text-white block">Alarm Dini (EWS)</span>
+                            <span class="text-[9px] text-amber-400 font-medium">Sinyal Evakuasi Aktif</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- Modal Penyelesaian Level / Sertifikat & Ringkasan -->
+    <div id="finish-modal" class="fixed inset-0 bg-slate-950/90 z-50 flex items-center justify-center p-4 overflow-y-auto hidden">
+        <div class="bg-slate-900 max-w-2xl w-full rounded-3xl border border-slate-800 overflow-hidden shadow-2xl flex flex-col md:flex-row transition-all duration-500 transform scale-95 opacity-0" id="modal-container">
+            <!-- Kolom Kiri: Sertifikat Visual -->
+            <div class="bg-gradient-to-br from-emerald-950 via-slate-900 to-slate-950 p-6 md:w-1/2 flex flex-col justify-between border-b md:border-b-0 md:border-r border-slate-800 relative overflow-hidden">
+                <!-- Ornamen Sertifikat -->
+                <div class="absolute -top-12 -left-12 w-28 h-28 bg-emerald-500/10 rounded-full blur-xl"></div>
+                <div class="absolute -bottom-12 -right-12 w-28 h-28 bg-emerald-500/10 rounded-full blur-xl"></div>
+
+                <div class="text-center">
+                    <span class="text-amber-400 text-3xl font-bold">🏆</span>
+                    <h3 class="text-xs font-bold tracking-widest text-emerald-400 mt-2 uppercase">SERTIFIKAT AKADEMIK</h3>
+                    <p class="text-[10px] text-slate-400 mt-0.5">Virtual Landslide Mitigation Lab</p>
+                </div>
+
+                <div class="my-8 text-center">
+                    <p class="text-slate-400 text-[11px] italic">Diberikan Kepada:</p>
+                    <h4 class="text-lg font-black text-white mt-1 border-b border-slate-800 pb-1.5" id="cert-player-name">PENELITI BUMI DAN ANTARIKSA</h4>
+                    <p class="text-xs text-slate-300 mt-3 leading-relaxed">Telah berhasil meneliti kestabilan lereng, menganalisis mitigasi rekayasa sipil &amp; meraih gelar:</p>
+                    <span class="inline-block bg-emerald-500/10 text-emerald-400 text-sm font-extrabold px-3 py-1.5 rounded-full border border-emerald-500/20 mt-3 tracking-wide" id="cert-title">AHLI MITIGASI BENCANA</span>
+                </div>
+
+                <div class="text-center">
+                    <!-- Bintang Penilaian -->
+                    <div class="flex justify-center gap-1 text-amber-400 text-xl" id="cert-stars">
+                        <i class="fa-solid fa-star"></i>
+                        <i class="fa-solid fa-star"></i>
+                        <i class="fa-solid fa-star"></i>
+                        <i class="fa-solid fa-star"></i>
+                        <i class="fa-solid fa-star"></i>
+                    </div>
+                    <span class="text-[10px] text-slate-500 block mt-1.5" id="cert-stars-label">Level: Peneliti Berpengalaman</span>
+                </div>
+            </div>
+
+            <!-- Kolom Kanan: Ringkasan Materi & Aksi -->
+            <div class="p-6 md:w-1/2 flex flex-col justify-between bg-slate-900">
+                <div>
+                    <h3 class="text-base font-extrabold text-white mb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-graduation-cap text-emerald-400"></i> Ringkasan Pembelajaran IPA
+                    </h3>
+                    <p class="text-xs text-slate-400 mb-4 leading-relaxed">Analisis kesimpulan ilmiah dari serangkaian simulasi lab yang telah kamu lakukan:</p>
+
+                    <div class="flex flex-col gap-3 max-h-60 overflow-y-auto pr-1">
+                        <!-- Poin 1 -->
+                        <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800 flex gap-2 items-start">
+                            <span class="text-sm">⚠️</span>
+                            <div>
+                                <h4 class="text-xs font-bold text-white">Faktor Pemicu Longsor</h4>
+                                <p class="text-[10px] text-slate-400 mt-0.5">Sudut kemiringan lereng yang curam, tingginya saturasi air hujan dalam tanah, serta pembukaan lahan (gundul).</p>
+                            </div>
+                        </div>
+                        <!-- Poin 2 -->
+                        <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800 flex gap-2 items-start">
+                            <span class="text-sm">🌳</span>
+                            <div>
+                                <h4 class="text-xs font-bold text-white">Pentingnya Vegetasi</h4>
+                                <p class="text-[10px] text-slate-400 mt-0.5">Akar pohon mengikat partikel tanah secara kohesif, membentuk jangkar alami yang membatasi pergerakan tanah longsor.</p>
+                            </div>
+                        </div>
+                        <!-- Poin 3 -->
+                        <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800 flex gap-2 items-start">
+                            <span class="text-sm">🛠️</span>
+                            <div>
+                                <h4 class="text-xs font-bold text-white">Mitigasi Rekayasa Sipil</h4>
+                                <p class="text-[10px] text-slate-400 mt-0.5">Terasering membagi lereng menjadi landai, drainase mengurangi air jenuh, dan EWS mencegah korban jiwa.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-2 mt-6">
+                    <button onclick="downloadCertificate()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-600/20">
+                        <i class="fa-solid fa-download"></i> Unduh Sertifikat (PNG)
+                    </button>
+                    <button onclick="shareResults()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 border border-slate-700">
+                        <i class="fa-solid fa-share-nodes"></i> Bagikan Hasil Penelitian
+                    </button>
+                    <button onclick="closeModal()" class="w-full bg-slate-950 hover:bg-slate-900 text-slate-400 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 mt-2">
+                        Lanjutkan Eksperimen
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification (Custom Pop-up Pengganti Alert) -->
+    <div id="toast-notif" class="fixed bottom-5 right-5 z-50 bg-slate-900 border-2 border-emerald-500/50 p-4 rounded-2xl shadow-2xl flex items-start gap-3 max-w-sm transition-all duration-300 transform translate-y-[150%] opacity-0">
+        <span class="text-2xl" id="toast-icon">🚀</span>
+        <div>
+            <h4 class="text-xs font-bold text-emerald-400 uppercase tracking-wider" id="toast-title">Notifikasi Lab</h4>
+            <p class="text-[11px] text-slate-300 mt-1 leading-relaxed" id="toast-message">Deskripsi informasi atau notifikasi lab.</p>
+        </div>
+    </div>
+
+    <!-- Footer Akademik -->
+    <footer class="border-t border-slate-800 bg-slate-950 py-3 text-center px-4">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-slate-500">
+            <p>© 2026 Virtual Landslide Lab. Dibuat untuk Mata Kuliah Bumi dan Antariksa / Pendidikan IPA.</p>
+            <div class="flex gap-4">
+                <a href="#" class="hover:text-slate-400 transition-colors">Panduan Guru</a>
+                <a href="#" class="hover:text-slate-400 transition-colors">Lembar Kerja Siswa</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Aplikasi Logika JS Utama -->
+    <script>
+        // State Simulasi Global
+        let currentLevel = 1;
+        let selectedLanduse = 'hutan'; // hutan, tani, desa, gundul
+        let score = 100;
+        let isSlideHappened = false;
+
+        // Data Konfigurasi 5 Level Pembelajaran
+        const levels = {
+            1: {
+                title: "Lereng Hutan Alami",
+                desc: "Fokus pada peran vegetasi dan kekuatan akar tanaman dalam mengikat struktur butir tanah. Pertahankan kerapatan pohon alami untuk mengurangi ancaman erosi.",
+                rain: 15,
+                veg: 90,
+                slope: 15,
+                landuse: "hutan"
+            },
+            2: {
+                title: "Lereng Pertanian Lereng Gunung",
+                desc: "Fokus pada pertanian di wilayah berbukit. Meneliti bahaya pembukaan lahan gundul berlebihan dan pentingnya pemanfaatan terasering buatan.",
+                rain: 30,
+                veg: 45,
+                slope: 20,
+                landuse: "tani"
+            },
+            3: {
+                title: "Lereng Pegunungan Tinggi",
+                desc: "Fokus pada efek percepatan gravitasi pada kemiringan lereng yang curam (25° - 45°). Sangat rawan mengalami pergerakan tanah saat curah hujan naik sedikit.",
+                rain: 25,
+                veg: 60,
+                slope: 35,
+                landuse: "gundul"
+            },
+            4: {
+                title: "Musim Hujan Ekstrem (Anomali Cuaca)",
+                desc: "Fokus pada curah hujan ekstrem mendekati 100%. Tingginya tekanan air pori tanah melubangi cengkeraman akar pohon alami. Butuh mitigasi struktural ekstra!",
+                rain: 95,
+                veg: 75,
+                slope: 22,
+                landuse: "hutan"
+            },
+            5: {
+                title: "Desa Rawan Longsor",
+                desc: "Level Integrasi Mitigasi. Amankan pemukiman di bawah tebing curam dengan mengaktifkan reboisasi lereng, membuat sabuk drainase air, terasering, serta menara EWS.",
+                rain: 80,
+                veg: 30,
+                slope: 30,
+                landuse: "desa"
+            }
+        };
+
+        // Info Edukasi Detail (Tap Objek)
+        const infoIpaData = {
+            pohon: {
+                icon: "🌳",
+                title: "Peran Akar Pohon dalam Tanah",
+                text: "Akar pepohonan bertindak sebagai mikropilar biologis (jangkar tanah). Menjangkau retakan batuan dasar, mengikat butir tanah lunak (kohesi), dan mengurangi kadar air di pori tanah melalui penguapan transpirasi."
+            },
+            hujan: {
+                icon: "🌧️",
+                title: "Kejenuhan Air Tanah akibat Curah Hujan",
+                text: "Saat hujan lebat meresap (infiltrasi), pori tanah terisi air secara penuh. Ini memicu 'tekanan air pori' yang kuat, melonggarkan ikatan antar partikel pasir/tanah liat, dan secara drastis melicinkan lapisan gelincir lereng."
+            },
+            lereng: {
+                icon: "⛰️",
+                title: "Sudut Kemiringan & Gaya Gravitasi",
+                text: "Semakin besar sudut kemiringan lereng, maka semakin besar pula komponen gaya gravitasi sejajar lereng yang berupaya menarik massa tanah ke bawah. Jika gaya dorong ini melampaui gaya gesek tahanan tanah, longsor akan seketika terjadi."
+            },
+            ews: {
+                icon: "🚨",
+                title: "Sistem Peringatan Dini (EWS)",
+                text: "Early Warning System mengandalkan sensor ekstensometer untuk mendeteksi retakan kecil di tebing dan sensor hujan penakar curah. Jika tanah bergeser beberapa milimeter, sirene aktif memberi waktu bagi warga untuk mengevakuasi diri."
+            }
+        };
+
+        // Inisialisasi saat window dimuat
+        window.onload = function() {
+            createRainDrops();
+            changeLevel(1);
+        };
+
+        // Generate Elemen Animasi Hujan
+        function createRainDrops() {
+            const container = document.getElementById('rain-layer');
+            container.innerHTML = '';
+            for (let i = 0; i < 40; i++) {
+                const drop = document.createElement('div');
+                drop.className = 'rain-drop';
+                drop.style.left = `${Math.random() * 100}%`;
+                drop.style.top = `${Math.random() * -50}px`;
+                drop.style.animation = `rain ${0.8 + Math.random() * 0.8}s linear infinite`;
+                drop.style.animationDelay = `${Math.random() * 2}s`;
+                container.appendChild(drop);
+            }
+        }
+
+        // Ubah Intensitas Hujan secara Visual
+        function updateRainIntensity(percentage) {
+            const drops = document.querySelectorAll('.rain-drop');
+            drops.forEach((drop, idx) => {
+                if (idx < (percentage / 100) * drops.length) {
+                    drop.style.display = 'block';
+                    drop.style.animationDuration = `${0.5 + (100 - percentage) / 100 * 1.5}s`;
+                    drop.style.height = `${10 + (percentage / 100) * 15}px`;
+                } else {
+                    drop.style.display = 'none';
+                }
+            });
+        }
+
+        // Ganti Level Lab
+        function changeLevel(lvl) {
+            currentLevel = lvl;
+            
+            document.querySelectorAll('.lvl-btn').forEach(btn => {
+                btn.className = "lvl-btn px-3 py-1.5 text-xs font-semibold rounded-lg transition-all text-slate-400 hover:text-white whitespace-nowrap";
+            });
+            document.getElementById(`btn-lvl-${lvl}`).className = "lvl-btn px-3 py-1.5 text-xs font-semibold rounded-lg transition-all bg-emerald-600 text-white shadow-md";
+
+            const lvlData = levels[lvl];
+            document.getElementById('level-badge').innerText = `LEVEL ${lvl} - ${lvlData.title.toUpperCase()}`;
+            document.getElementById('level-title').innerText = lvlData.title;
+            document.getElementById('level-desc').innerText = lvlData.desc;
+
+            document.getElementById('slider-rain').value = lvlData.rain;
+            document.getElementById('slider-veg').value = lvlData.veg;
+            document.getElementById('slider-slope').value = lvlData.slope;
+            
+            setLanduse(lvlData.landuse);
+
+            document.getElementById('mit-reboisasi').checked = false;
+            document.getElementById('mit-terasering').checked = false;
+            document.getElementById('mit-drainase').checked = false;
+            document.getElementById('mit-ews').checked = false;
+
+            isSlideHappened = false;
+            score = 100;
+            document.getElementById('lab-score').innerText = score;
+
+            updateSimulation();
+            showToast("🏢 Lab Terbuka", `Selamat Datang di Eksperimen ${lvlData.title}!`);
+        }
+
+        // Atur Tipe Penggunaan Lahan
+        function setLanduse(type) {
+            selectedLanduse = type;
+            
+            document.querySelectorAll('.lu-btn').forEach(btn => {
+                btn.className = "lu-btn py-2 px-3 text-xs rounded-xl font-semibold border text-left transition-all bg-slate-950 text-slate-400 border-slate-800";
+            });
+
+            const activeBtn = document.getElementById(`btn-lu-${type}`);
+            if (activeBtn) {
+                activeBtn.className = "lu-btn py-2 px-3 text-xs rounded-xl font-semibold border text-left transition-all bg-emerald-950/40 text-emerald-400 border-emerald-500/50";
+            }
+
+            const house1 = document.getElementById('house-1');
+            const house2 = document.getElementById('house-2');
+            
+            if (type === 'desa') {
+                house1.style.opacity = '1';
+                house2.style.opacity = '1';
+                document.getElementById('landuse-status-text').innerText = "Pemukiman Desa";
+            } else if (type === 'tani') {
+                house1.style.opacity = '0.3'; 
+                house2.style.opacity = '0';
+                document.getElementById('landuse-status-text').innerText = "Lahan Pertanian";
+            } else if (type === 'hutan') {
+                house1.style.opacity = '0'; 
+                house2.style.opacity = '0.2'; 
+                document.getElementById('landuse-status-text').innerText = "Hutan Alami";
+            } else {
+                house1.style.opacity = '0';
+                house2.style.opacity = '0';
+                document.getElementById('landuse-status-text').innerText = "Lahan Gundul (Rusak)";
+            }
+
+            updateSimulation();
+        }
+
+        // Menampilkan Info IPA (Edukasi Tap)
+        function showInfoIpa(target) {
+            const data = infoIpaData[target];
+            if (!data) return;
+
+            const box = document.getElementById('info-ipa-box');
+            document.getElementById('info-ipa-icon').innerText = data.icon;
+            document.getElementById('info-ipa-text').innerText = data.text;
+            
+            box.style.opacity = '1';
+            box.style.pointerEvents = 'auto';
+            box.style.transform = 'translateY(0)';
+        }
+
+        function closeInfoIpa() {
+            const box = document.getElementById('info-ipa-box');
+            box.style.opacity = '0';
+            box.style.pointerEvents = 'none';
+            box.style.transform = 'translateY(-120%)';
+        }
+
+        // Tampilkan Toast Notifikasi
+        function showToast(title, message, icon = "🚀") {
+            const toast = document.getElementById('toast-notif');
+            document.getElementById('toast-icon').innerText = icon;
+            document.getElementById('toast-title').innerText = title;
+            document.getElementById('toast-message').innerText = message;
+            
+            toast.className = "fixed bottom-5 right-5 z-50 bg-slate-900 border-2 border-emerald-500/50 p-4 rounded-2xl shadow-2xl flex items-start gap-3 max-w-sm transition-all duration-300 transform translate-y-0 opacity-100";
+            
+            setTimeout(() => {
+                toast.className = "fixed bottom-5 right-5 z-50 bg-slate-900 border-2 border-emerald-500/50 p-4 rounded-2xl shadow-2xl flex items-start gap-3 max-w-sm transition-all duration-300 transform translate-y-[150%] opacity-0";
+            }, 4000);
+        }
+
+        // Reset Simulasi Level Terbuka
+        function resetSimulasi() {
+            changeLevel(currentLevel);
+        }
+
+        // Perhitungan & Pembaruan Simulasi Fisika Lereng (Loop Utama)
+        function updateSimulation() {
+            const rain = parseInt(document.getElementById('slider-rain').value);
+            const veg = parseInt(document.getElementById('slider-veg').value);
+            const slope = parseInt(document.getElementById('slider-slope').value);
+
+            const mitReboisasi = document.getElementById('mit-reboisasi').checked;
+            const mitTerasering = document.getElementById('mit-terasering').checked;
+            const mitDrainase = document.getElementById('mit-drainase').checked;
+            const mitEws = document.getElementById('mit-ews').checked;
+
+            document.getElementById('rain-slider-val').innerText = `${rain}%`;
+            document.getElementById('veg-slider-val').innerText = `${veg}%`;
+            document.getElementById('slope-slider-val').innerText = `${slope}°`;
+
+            updateRainIntensity(rain);
+
+            let effectiveSlope = slope;
+            if (mitTerasering) {
+                effectiveSlope = Math.max(5, slope - 15);
+            }
+
+            let effectiveSaturation = rain * 1.2;
+            if (mitDrainase) {
+                effectiveSaturation = Math.max(0, effectiveSaturation * 0.5);
+            }
+            document.getElementById('saturation-text').innerText = `${effectiveSaturation.toFixed(1)}%`;
+
+            let rootGripFactor = veg;
+            if (mitReboisasi) {
+                rootGripFactor = Math.min(100, rootGripFactor + 30);
+            }
+            document.getElementById('grip-text').innerText = rootGripFactor > 60 ? "Kuat" : (rootGripFactor > 30 ? "Sedang" : "Sangat Lemah");
+
+            let landusePenalty = 0;
+            if (selectedLanduse === 'gundul') landusePenalty = 20;
+            if (selectedLanduse === 'tani') landusePenalty = 10;
+            if (selectedLanduse === 'desa') landusePenalty = 15;
+
+            let baseRisk = (effectiveSlope / 45) * 55 + (effectiveSaturation / 120) * 45 + landusePenalty;
+            let reduction = (rootGripFactor / 100) * 40;
+            let finalRisk = Math.max(0, Math.min(100, Math.round(baseRisk - reduction)));
+
+            const riskValText = document.getElementById('risk-index-value');
+            riskValText.innerText = finalRisk;
+
+            const needleRot = -90 + (finalRisk / 100) * 180;
+            document.getElementById('gauge-needle').style.transform = `rotate(${needleRot}deg)`;
+
+            const statusBadge = document.getElementById('risk-status-badge');
+            const riskArc = document.getElementById('risk-arc');
+            
+            let statusColor = "text-emerald-400";
+            let statusText = "🟢 RENDAH";
+            let arcColor = "#10b981";
+
+            if (finalRisk > 70) {
+                statusColor = "text-red-500";
+                statusText = "🔴 SANGAT TINGGI";
+                arcColor = "#ef4444";
+            } else if (finalRisk > 50) {
+                statusColor = "text-orange-500";
+                statusText = "🟠 TINGGI";
+                arcColor = "#f97316";
+            } else if (finalRisk > 25) {
+                statusColor = "text-amber-500";
+                statusText = "🟡 SEDANG";
+                arcColor = "#f59e0b";
+            }
+
+            statusBadge.innerText = statusText;
+            statusBadge.className = `text-[10px] uppercase tracking-widest font-bold ${statusColor}`;
+            riskArc.style.borderColor = arcColor;
+
+            const slopeStatus = document.getElementById('slope-status-text');
+            if (finalRisk > 70) {
+                slopeStatus.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block animate-ping"></span> Kolaps / Longsor!`;
+            } else if (finalRisk > 50) {
+                slopeStatus.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-orange-500 inline-block animate-pulse"></span> Kritis / Retak`;
+            } else if (finalRisk > 25) {
+                slopeStatus.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span> Kestabilan Menurun`;
+            } else {
+                slopeStatus.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span> Sangat Stabil`;
+            }
+
+            renderDynamicSVG(slope, veg, rootGripFactor, mitTerasering, mitDrainase, mitEws, finalRisk);
+
+            handleConsequences(finalRisk, mitEws);
+        }
+
+        // Render Grafik SVG Sesuai Slider Berubah
+        function renderDynamicSVG(slope, veg, rootGrip, terasering, drainase, ews, risk) {
+            const startX = 0;
+            const startY = 480;
+            
+            const peakX = 550 - (slope / 45) * 200;
+            const peakY = 220 - (slope / 45) * 80;
+
+            const soilPath = `M 0 500 L ${peakX} ${peakY} L 800 ${peakY} L 800 500 L 0 500 Z`;
+            document.getElementById('soil-layer').setAttribute('d', soilPath);
+            document.getElementById('slope-clickable').setAttribute('d', `M 0 500 L ${peakX} ${peakY} L 800 ${peakY}`);
+
+            const teraseringGroup = document.getElementById('terasering-graphics');
+            if (terasering) {
+                teraseringGroup.style.opacity = '1';
+                teraseringGroup.innerHTML = `
+                    <path d="M 0 500 L 100 500 L 100 440 L 220 440 L 220 380 L 340 380 L 340 320 L 460 320 L 460 260 L ${peakX} 260 L 800 260" stroke="#059669" stroke-width="4" fill="none" stroke-dasharray="1,1" />
+                `;
+            } else {
+                teraseringGroup.style.opacity = '0';
+            }
+
+            const drainPath = document.getElementById('drainase-graphics');
+            if (drainase) {
+                drainPath.style.opacity = '1';
+                drainPath.setAttribute('d', `M ${peakX - 30} ${peakY + 10} L 480 470 L 510 500`);
+            } else {
+                drainPath.style.opacity = '0';
+            }
+
+            const ewsGrp = document.getElementById('ews-graphics');
+            if (ews) {
+                ewsGrp.style.opacity = '1';
+                const light = document.getElementById('ews-light');
+                if (risk > 50) {
+                    light.setAttribute('fill', '#ef4444');
+                    light.style.animation = 'ping 0.6s cubic-bezier(0, 0, 0.2, 1) infinite';
+                } else {
+                    light.setAttribute('fill', '#22c55e');
+                    light.style.animation = 'none';
+                }
+            } else {
+                ewsGrp.style.opacity = '0';
+            }
+
+            const vegGroup = document.getElementById('vegetation-layer');
+            vegGroup.innerHTML = '';
+            
+            const numTrees = Math.floor(veg / 12);
+            for (let i = 0; i < numTrees; i++) {
+                const tPercent = i / (numTrees - 1 || 1);
+                const treeX = 80 + tPercent * (peakX - 100);
+                const ratio = treeX / peakX;
+                const treeY = 500 - (ratio * (500 - peakY)) - 10;
+
+                const treeHTML = `
+                    <g transform="translate(${treeX}, ${treeY})">
+                        <rect x="-4" y="0" width="8" height="22" fill="#5c3f2b" rx="2" />
+                        <path d="M -4 15 Q -10 25 -2 35 M 4 15 Q 10 28 2 38" stroke="#3b2314" stroke-width="1.5" fill="none" opacity="0.8" />
+                        <circle cx="0" cy="-10" r="16" fill="#15803d" />
+                        <circle cx="-10" cy="-18" r="12" fill="#166534" />
+                        <circle cx="10" cy="-14" r="12" fill="#1e3a1e" />
+                        <circle cx="0" cy="-22" r="8" fill="#22c55e" opacity="0.8" />
+                    </g>
+                `;
+                vegGroup.innerHTML += treeHTML;
+            }
+
+            const crack1 = document.getElementById('crack-line-1');
+            const crack2 = document.getElementById('crack-line-2');
+            if (risk > 50) {
+                crack1.style.opacity = '1';
+                crack2.style.opacity = '1';
+                crack1.setAttribute('stroke-width', risk > 70 ? '6' : '3');
+            } else {
+                crack1.style.opacity = '0';
+                crack2.style.opacity = '0';
+            }
+        }
+
+        // Penanganan Logika Kerusakan dan Longsor
+        function handleConsequences(risk, ewsActive) {
+            const container = document.getElementById('simulation-container');
+            const flash = document.getElementById('slide-flash');
+            const feedbackEmoji = document.getElementById('feedback-emoji');
+            const feedbackTitle = document.getElementById('feedback-title');
+            const feedbackDesc = document.getElementById('feedback-desc');
+            const feedbackContainer = document.getElementById('feedback-container');
+
+            container.style.animation = 'none';
+
+            if (risk > 70) {
+                isSlideHappened = true;
+                container.style.animation = 'shake 0.3s ease-in-out infinite';
+                flash.style.opacity = '1';
+
+                document.getElementById('soil-layer').setAttribute('transform', 'translate(-10, 15) rotate(1)');
+                document.getElementById('rock-1').setAttribute('transform', 'translate(-80, 150)');
+                document.getElementById('rock-2').setAttribute('transform', 'translate(-60, 130)');
+                document.getElementById('rock-3').setAttribute('transform', 'translate(-40, 90)');
+
+                if (selectedLanduse === 'desa') {
+                    document.getElementById('house-1').setAttribute('transform', 'rotate(-15) translate(-10, 20)');
+                }
+
+                if (score > 10) {
+                    score -= 1;
+                    document.getElementById('lab-score').innerText = score;
+                }
+
+                if (ewsActive) {
+                    feedbackEmoji.innerText = "🚨";
+                    feedbackTitle.innerText = "LONGSOR TERJADI! (Evakuasi Sukses)";
+                    feedbackTitle.className = "text-sm font-bold text-red-400";
+                    feedbackDesc.innerText = "Sirene EWS mendeteksi retakan dan berbunyi kencang! Seluruh warga berhasil mengungsi ke tempat aman tepat waktu sebelum longsoran menimbun rumah. Korban jiwa: Nol!";
+                    feedbackContainer.className = "flex gap-3 items-start bg-red-950/40 p-3.5 rounded-xl border border-red-500/30";
+                } else {
+                    feedbackEmoji.innerText = "💀";
+                    feedbackTitle.innerText = "BENCANA LONGSOR TERJADI!";
+                    feedbackTitle.className = "text-sm font-bold text-red-500";
+                    feedbackDesc.innerText = "Longsor dahsyat terjadi menimbun area sekitar! Ketiadaan EWS serta gundulnya lereng membahayakan rumah warga. Segera aktifkan mitigasi sipil & kurangi curah hujan!";
+                    feedbackContainer.className = "flex gap-3 items-start bg-red-950/60 p-3.5 rounded-xl border-2 border-red-600";
+                }
+
+                setTimeout(() => {
+                    if (isSlideHappened) {
+                        openEvaluationModal();
+                    }
+                }, 4000);
+
+            } else if (risk > 50) {
+                flash.style.opacity = '0';
+                document.getElementById('soil-layer').removeAttribute('transform');
+                document.getElementById('rock-1').removeAttribute('transform');
+                
+                feedbackEmoji.innerText = "🟡";
+                feedbackTitle.innerText = "Hati-hati! Ancaman Retakan Lereng";
+                feedbackTitle.className = "text-sm font-bold text-orange-400";
+                feedbackDesc.innerText = "Kombinasi hujan tinggi dan vegetasi yang kian menyusut melemahkan gaya gesek tanah. Retakan kecil mulai terlihat di sepanjang lereng bukit.";
+                feedbackContainer.className = "flex gap-3 items-start bg-orange-950/20 p-3.5 rounded-xl border border-orange-500/30";
+
+            } else {
+                flash.style.opacity = '0';
+                document.getElementById('soil-layer').removeAttribute('transform');
+                document.getElementById('rock-1').removeAttribute('transform');
+                document.getElementById('rock-2').removeAttribute('transform');
+                document.getElementById('rock-3').removeAttribute('transform');
+                document.getElementById('house-1').removeAttribute('transform');
+
+                feedbackEmoji.innerText = "🟢";
+                feedbackTitle.innerText = "Bagus! Lereng Kokoh & Stabil";
+                feedbackTitle.className = "text-sm font-bold text-emerald-400";
+                feedbackDesc.innerText = "Cengkeraman jaring akar mencukupi untuk melawan peningkatan debit aliran air pori. Struktur lereng stabil, pemukiman aman.";
+                feedbackContainer.className = "flex gap-3 items-start bg-emerald-950/20 p-3.5 rounded-xl border border-emerald-500/30";
+            }
+        }
+
+        // Buka Modal Evaluasi Akhir / Sertifikat Peneliti
+        function openEvaluationModal() {
+            const modal = document.getElementById('finish-modal');
+            const container = document.getElementById('modal-container');
+            
+            const starContainer = document.getElementById('cert-stars');
+            const starsLabel = document.getElementById('cert-stars-label');
+            const certTitle = document.getElementById('cert-title');
+
+            starContainer.innerHTML = '';
+            let starNum = 3;
+            let titleText = "Pemula Mitigasi";
+            let labelText = "Peringkat: Pemula (Terus Belajar)";
+
+            if (score > 85) {
+                starNum = 5;
+                titleText = "AHLI MITIGASI BENCANA UTAMA";
+                labelText = "Peringkat: Rekayasa Kebencanaan Sempurna!";
+            } else if (score > 55) {
+                starNum = 4;
+                titleText = "PENELITI LINGKUNGAN BUMI";
+                labelText = "Peringkat: Peneliti Madya Berpengalaman";
+            }
+
+            for (let i = 0; i < 5; i++) {
+                if (i < starNum) {
+                    starContainer.innerHTML += `<i class="fa-solid fa-star text-amber-400"></i>`;
+                } else {
+                    starContainer.innerHTML += `<i class="fa-regular fa-star text-slate-600"></i>`;
+                }
+            }
+
+            starsLabel.innerText = labelText;
+            certTitle.innerText = titleText;
+
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                container.classList.remove('scale-95', 'opacity-0');
+                container.classList.add('scale-100', 'opacity-100');
+            }, 100);
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('finish-modal');
+            const container = document.getElementById('modal-container');
+            container.classList.remove('scale-100', 'opacity-100');
+            container.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        // Simulasi Unduh Sertifikat Digital (Menggunakan Canvas untuk membuat Gambar PNG)
+        function downloadCertificate() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 800;
+            canvas.height = 600;
+            const ctx = canvas.getContext('2d');
+
+            const grad = ctx.createLinearGradient(0, 0, 800, 600);
+            grad.addColorStop(0, '#064e3b'); 
+            grad.addColorStop(1, '#022c22');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 800, 600);
+
+            ctx.strokeStyle = '#d97706';
+            ctx.lineWidth = 15;
+            ctx.strokeRect(20, 20, 760, 560);
+            
+            ctx.strokeStyle = '#fbbf24';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(35, 35, 730, 530);
+
+            ctx.fillStyle = '#fbbf24';
+            ctx.font = 'bold 24px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('SERTIFIKAT KELULUSAN AKADEMIK', 400, 120);
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '16px sans-serif';
+            ctx.fillText('Laboratorium Kebencanaan Virtual Bumi & Antariksa', 400, 160);
+
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = 'italic 16px sans-serif';
+            ctx.fillText('Diberikan kepada Peneliti Tangguh:', 400, 240);
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 32px sans-serif';
+            ctx.fillText('AHLI MITIGASI TANAH LONGSOR', 400, 300);
+
+            ctx.fillStyle = '#34d399';
+            ctx.font = 'bold 20px sans-serif';
+            ctx.fillText('Gelar: Spesialis Analisis Lereng Terpadu', 400, 360);
+
+            ctx.fillStyle = '#cbd5e1';
+            ctx.font = '14px sans-serif';
+            ctx.fillText(`Skor Eksperimen Terakhir: ${score} / 100`, 400, 420);
+            ctx.fillText('Tanggal Penelitian: ' + new Date().toLocaleDateString('id-ID'), 400, 450);
+
+            ctx.fillStyle = '#94a3b8';
+            ctx.fillText('Dosen Pengampu Bumi & Antariksa', 400, 510);
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(320, 490);
+            ctx.lineTo(480, 490);
+            ctx.stroke();
+
+            const dataUrl = canvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.download = 'Sertifikat_Virtual_Landslide_Lab.png';
+            link.href = dataUrl;
+            link.click();
+
+            showToast("💾 Unduh Berhasil", "Sertifikat akademik berhasil disimpan di perangkatmu!", "🏆");
+        }
+
+        // Bagikan Hasil Penelitian
+        function shareResults() {
+            const shareText = `Saya berhasil menyelesaikan simulasi eksperimen laboratorium mitigasi tanah longsor "Virtual Landslide Lab" dengan skor stabilitas: ${score}/100! Mari belajar mitigasi kebencanaan bersama!`;
+            
+            const dummy = document.createElement('textarea');
+            document.body.appendChild(dummy);
+            dummy.value = shareText;
+            dummy.select();
+            document.execCommand('copy');
+            document.body.removeChild(dummy);
+
+            showToast("🔗 Teks Disalin", "Hasil penelitian disalin ke papan klip! Siap dibagikan ke forum kelas/WA.", "📤");
+        }
+    </script>
+</body>
+</html>
